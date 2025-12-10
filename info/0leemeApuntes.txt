@@ -1,0 +1,223 @@
+CREAR DIRECTORIO mern
+
+ABRIR DIRECTORIO mern EN VSC (VISUAL STUDIO CODE)
+DENTRO DEL /mern
+EJECUTAR EN LA CONSOLA PARA INSTALAR React:
+npx create-react-app react-frontend
+
+SE CREARA UN DIRECTORIO llamado react-frontend
+ABRIR DIRECTORIO react-frontend
+cd react-frontend
+
+INSTALAR MUI CON
+npm install @mui/material @emotion/react @emotion/styled
+npm install @fontsource/roboto
+npm install @mui/icons-material
+
+PARA PODER USAR RUTAS EN React
+npm install react-router-dom@6
+RECORDAR IMPORTAR Y ENVOLVER el Return en App.js con
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+...
+    <BrowserRouter>
+      <Routes>
+
+        <Route path="/" element={<HomePage />} />
+        <Route path="/descriptions" element={<DescriptionsListPage />} />
+        <Route path="/descriptions/new" element={<DescriptionsFormInsertPage />} />
+        <Route path="/descriptions/view/:id" element={<DescriptionsView />} />
+        <Route path="/descriptions/view/:id/ia" element={<DescriptionsViewIA />} />
+        <Route path="/descriptions/edit/:id" element={<DescriptionsFormEditPage />} />
+        <Route path="/cars/selector" element={<CarsSelector />} />
+      </Routes>
+    </BrowserRouter>
+
+
+PARA PODER USAR GEMINI IA EN React
+npm i @google/genai    (aunque en los apuntes de Che ponía @google/generative-ai, han debido hacer cambios)
+OJO necesita tener un fichero .env en el directorio principal del proyecto con el siguiente contenido con la variable de Gemini API Key
+REACT_APP_GEMINI_API_KEY=abcd   <-- donde abcd es nuestra API Key
+
+
+PROBAR QUE FUNCIONA React
+npm start
+
+CERRAR React CON CRTL+C EN LA CONSOLA
+SUBIR UN DIRECTORIO (OSEA IR AL DIRECTORIO mern)
+cd..
+
+CREAR DIRECTORIO PARA EL BACKEND
+mkdir express-backend
+
+ABRIR DIRECTORIO CREADO
+cd express-backend
+
+PARA PODER USAR EL GESTOR DE PAQUETES NPM, TENEMOS QUE CREAR EL FICHERO PACKAGE.JSON PARA PODER GESTIONAR PAQUETES CON NPM
+npm init -y
+
+INSTALAR LOS PAQUETES EXPRESS, NODEMON Y CORS
+npm install express
+npm install --save-dev nodemon  // para que al cambiar código se ejecture express de nuevo
+npm install cors
+// para poder usar pouchdb OJO A PARTIR DE AHORA LAS RUTAS EN EXPRESS LLADAS CON ASYNC-AWAIT
+npm install pouchdb             
+npm install pouchdb-find        // para poder usar .find en pouchdb, 
+
+en el package.json
+MODIFICAR EL PACKAGE.JSON CREADO PARA USAR EL MODO DE TRABAJO MODERNO "ES MODULE" (EL MODO VIEJO ES "COMMONJS") Y PARA
+EJECUTAR index.js Y ARRANCAR EL SERVIDOR
+"type": "module",
+"scripts": {
+    "start": "node index.js", // ojo en los apuntes pone "node server/server.js"
+    "dev": "nodemon index.js"  // ojo en los apuntes pone "nodemon server/server.js"
+
+  },
+
+CREAR UN INDEX.JS CON EL SIGUIENTE CÓDIGO PARA HACER PRUEBAS CON LA BARRA DEL NAVEGADOR:
+
+
+********************
+* INICIO DE CÓDIGO *
+********************
+import express from "express";
+import path from "path";
+import cors from 'cors';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// API Route Example
+app.get("/api/message", (req, res) => {
+  res.json({ message: "Hello from Express!" });
+});
+
+// **OPCIONAL**
+// Serve React Frontend 
+//app.use(express.static(path.join(__dirname, "../build")));
+
+//app.get("*", (req, res) => {
+//  res.sendFile(path.join(__dirname, "../build", "index.html"));
+//});
+// **END OPCIONAL**
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+********************
+* FIN DE CÓDIGO    *
+********************
+
+
+********************
+* NOTA IMPORTANTE  *
+********************
+No hay que confundir rutas en navegador con React (localhost:3000) con las rutas en el navegador con express (localhost:5000)
+Ya que las rutas en React están configuradas para presentar componentes (como puede ser el ejercicio de ingles, coches, ... )
+y las rutas de express ejecutarán código que tengan asignado (devolver un/unos dato/s de un array o base de datos)
+
+EJECUTAR EXPRESS
+npm run dev
+OJO HAY VARIOS FICHEROS PARA EJECUTAR CON EXPRESS, QUE TENDREMOS QUE REINICIAR A index.js PARA EJECUTAR EL QUE QUEREMOS
+index_1USERS_inicial.js
+    Contiene la versión inicial de users, con las típicas llamadas app.get("/api/v1/message", ...). Usa un array como base
+    de datos
+    si ponemos en el navegador la ruta (API):
+        http://localhost:5000/api/v1/message        // nos responderá con un mensaje
+        http://localhost:5000/api/v1/users          // nos devolverá un array con los datos de users con GET
+        hay más rutas disponibles para POST Y DELETE
+index_2coches.js
+    Contiene una versión de coches partiendo de la de users, usando también un array como base de datos
+    si ponemos en el navegador la ruta (API):
+        http://localhost:5000/api/v1/coches          // nos devolverá un array con los datos de coches con GET
+        hay más rutas disponibles para POST Y DELETE
+index_3penultima_version.js
+    Contiene una versión más completa de users y coches conteniendo todo el CRUD de una base de datos de pouchdb
+    CRUD quiere decir Create, Read, Update, Delete traducido sería Crear, Leer, Actualizar, Borrar
+    si ponemos en el navegador la ruta (API):
+        http://localhost:5000/api/v1/coches     // nos devolverá con GET un array con los datos de coches pero sacado de una base de datos
+        http://localhost:5000/api/v1/coches     // nos devolverá con GET un array con los datos de coches pero sacado de una base de datos
+        hay más rutas disponibles para POST, DELETE y PUT
+index.js
+    Contiene una versión final más avanzada de las anteriores, en las que se hacen unos cambios importantes para poder
+    tener la aplicación backend más ordenada ya que puede crecer mucho y contener un montón de rutas que pueden hacer difícil la
+    gestión de las mismas por su dimensión.
+    Tiene los siguientes cambios importantes:
+        // import PouchDB from 'pouchdb';  ES COMENTADO Y NO SE USA AQUI
+        import usersRouter from './routes/users.js';            // uso del fichero users.js
+        import carsRouter from './routes/cars.js';              // uso del fichero cars.js
+        import descriptionsRouter from './routes/descriptions.js'; // uso del fichero descriptions.js (ejercicio inglés)
+    Luego en el directorio principal de la aplicación abrá un fichero db.js
+        import path from 'path';                // Módulo nativo de Node.js para manejar rutas de archivos.
+        import { fileURLToPath } from 'url';    // Convierte una URL de tipo file:// (propia de ES Modules) en una ruta de archivo estándar.
+        import PouchDB from 'pouchdb';          // Base de datos local (NoSQL, similar a CouchDB).
+
+        import pouchdbFind from 'pouchdb-find'  // Plugin de PouchDB que permite hacer consultas tipo MongoDB (por campos).
+
+        // Esto reemplaza __filename y __dirname, que no existen por defecto en ES Modules, 
+        // para saber dónde está ubicado el archivo actual.
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // Create a path to the local "data" directory
+        // Crea una ruta absoluta a una carpeta llamada data dentro del proyecto.
+        const dataDirectory = path.join(__dirname, 'data');
+
+        // Habilita el uso de consultas más avanzadas (como .find()) en la base de datos.
+        PouchDB.plugin(pouchdbFind)
+
+        // Use the prefix config for PouchDB to store data in "data" folder
+        // Crea o abre una base de datos llamada tienda.
+        // Los datos se almacenan en disco, en la carpeta data.
+        const db = new PouchDB(path.join(dataDirectory, 'tienda')); // 'tienda' is your database name
+
+        export default db;
+    Después en una carpeta /routes crearemos los ficheros cars.js descriptions.js y users.js con las rutas GET y otras. Dichos
+    ficheros empezarán por las líneas:
+        import { Router} from 'express';
+        import db from '../db.js'; // importamos PouchDB
+        const router = Router()
+
+        router.get('/', async(req, res) => {  // no haría falta poner app.get("/api/v1/users", ...
+            .....
+        })
+
+        export default router; // IMPORTANTE TERMINARÁN CON ESTA LÍNEA
+
+
+
+
+PARA PROBAR APIS CON CURL, TENEMOS QUE USAR EL CMD DE WINDOWS (OJO NO ES LO MISMOA QUE LA CONSOLA DE VSC) EN EL QUE 
+EJECUTAREMOS CURL
+C:\Users\alu01>curl -X GET localhost:5000/api/v1/users
+<respuesta nos devolverá todos los usuarios>
+
+C:\Users\alu01>curl -X GET localhost:5000/api/v1/users/1
+<respuesta nos devuelve el usuario1> {"id":1,"nombre":"Pepe","edad":31}
+
+C:\Users\alu01>curl -X GET localhost:5000/api/v1/users/111
+<respuesta error porque el usuario 111 no existe> {"error":"No existe el usuario"}
+
+C:\Users\alu01>curl -X POST localhost:5000/api/v1/users -H "Content-Type: application/json" -d "{\"id\": 44, \"nombre\": \"Juanin\", \"edad\": 33}"
+<respuesta de usuario creado> Todo correcto. Usuario Juanin creado {id: 44, nombre: "Juanin", edad: 33}
+
+C:\Users\alu01>curl -X DELETE localhost:5000/api/v1/coches/44
+<respuesta usuario creado> Usuario borrado.
+
+TAMBIÉN PODRÍAMOS PROBAR LAS APIS CON POSTMAN
+poniendo POST y la url http://localhost:5000/api/v1/cars
+como Body - Raw - json
+    {
+        "marca": "Citroen",
+        "modelo": "Captur",
+        "ano": "2015"
+    }
+

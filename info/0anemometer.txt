@@ -1,0 +1,360 @@
+(DATOS DE PAGINA WEB) (AL FINAL ESTÁ EL CÓDIGO FINAL)
+Home
+Blog
+Projects
+Homekit
+Software
+About me
+Contact
+Search
+GUIDE TO THE HWFS-1 ANEMOMETER
+Accessories, Blog / June 8, 2025
+Measuring wind speed is essential for weather stations, agricultural monitoring, HVAC automation, and safety systems. The HWFS-1 Anemometer is a cost-effective, analog-output wind speed sensor, ideal for both DIY and industrial environments. In this guide, you’ll learn everything about the voltage-type HWFS-1 — its principle, wiring, and how to use it effectively with microcontrollers.
+
+What is the HWFS-1 Anemometer?
+The HWFS-1 is a mechanical cup-style wind speed sensor with an integrated voltage generator. As the wind rotates the 3-cup rotor, the internal generator produces a voltage signal proportional to wind speed — no external power supply is required.
+
+
+Key Features
+Model: HWFS-1
+Type: Analog cup-type anemometer
+Output: Voltage (0–2V typical, max 4V)
+Power: Passive (no external power needed)
+Wiring: 2 wires (Signal + Ground)
+Material: ABS plastic, weather-resistant
+Max Wind Speed: 200 KM/h
+Recommended Range: < 100 KM/h
+Installation: Bolt-through base, 3 × 6mm holes at 120°
+How It Works
+When wind blows, the cups rotate and an internal electromagnetic generator produces a voltage. The output voltage increases linearly with wind speed:
+
+0V → no wind
+2V → ~100 KM/h
+4V (max) → ~200 KM/h (not recommended for continuous use)
+HWFS-1 Wiring
+    Wire	Function
+    Black	GND (Ground)
+    Black with Stripe	Signal (Voltage out, 0–2V typical)
+Connect the signal wire to an ADC (Analog-to-Digital Converter) pin on your microcontroller (e.g., ESP32, Arduino) and the black wire to GND.
+
+Note: There is no polarity, but consistency is best practice.
+
+Using the HWFS-1 with a Microcontroller
+Example Wiring (ESP32)
+HWFS-1 Wire	ESP32 Pin
+Black with stripe	GPIO 34 (ADC)
+Solid black	GND
+
+Sample Arduino Code (Analog Reading)
+#define WIND_SENSOR_PIN 34
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int analogValue = analogRead(WIND_SENSOR_PIN); // 0–4095 on ESP32
+  float voltage = analogValue * 3.3 / 4095.0;     // Convert to volts
+  float windSpeedMS = voltage * 14.0;             // Wind speed in m/s
+  float windSpeedKMH = voltage * 50.0;            // Wind speed in km/h
+
+  Serial.print("Wind Speed: ");
+  Serial.print(windSpeedMS);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH);
+  Serial.println(" km/h");
+
+  delay(1000);
+}
+
+Código adaptado para un ESP8266 nodemcu
+// Único pin analógico del ESP8266
+#define WIND_SENSOR_PIN A0   
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int analogValue = analogRead(WIND_SENSOR_PIN); // 0–1023 en ESP8266
+  float voltage = analogValue * 3.3 / 1023.0;     // Convertir a voltios reales del sensor
+
+  // Ajusta estas fórmulas según tu sensor si es necesario
+  float windSpeedMS = voltage * 14.0;             // Velocidad en m/s
+  float windSpeedKMH = voltage * 50.0;            // Velocidad en km/h
+
+  Serial.print("Wind Speed: ");
+  Serial.print(windSpeedMS);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH);
+  Serial.println(" km/h");
+
+  delay(1000);
+}
+
+Calibration Formula
+You can estimate wind speed directly using these formulas:
+
+Wind speed (km/h) = Voltage (V) × 50
+Wind speed (m/s) = Voltage (V) × 14
+ Example: If the voltage is 0.5V, then:
+
+Wind speed ≈ 25 km/h
+Wind speed ≈ 7 m/s
+Practical Applications
+Weather Stations: Monitor outdoor wind conditions
+HVAC Automation: Adjust systems based on outside airflow
+Agriculture: Control irrigation and ventilation based on wind
+Wind-Triggered Systems: LED beacons, safety alerts, etc.
+Best Practices
+Mount horizontally at an open, unobstructed location
+Avoid metallic interference or lightning-prone spots
+Use waterproof enclosures for electronics
+Shield analog cable if longer than 3 meters
+Use a stable analog reference voltage for accuracy
+Conclusion: Wind Speed Made Simple
+The voltage-type HWFS-1 Anemometer is a reliable, easy-to-use analog wind speed sensor ideal for embedded systems. Its passive design requires no power supply, and it integrates seamlessly with ADC-enabled microcontrollers like the ESP32 and Arduino. With linear voltage output and simple formulas, it’s a perfect sensor for anyone needing real-time wind data.
+
+Happy Measuring!
+
+← Previous Post
+Next Post →
+SUPPORTER OF
+
+
+
+SPONSORED BY
+
+COLLABORATED WITH
+
+
+FEATURED ON
+
+StudioPieters.nl is a non-commercial, hobbyist website.
+No personal data is stored by us.
+All information is provided as-is, without warranty.
+Use is at your own risk. © StudioPieters.nl 2025
+Read the full Privacy Policy and Disclaimer
+
+Copyright © 2025 |  StudioPieters® | All rights reserved.
+
+Build by Achim Pieters
+
+Scroll to Top
+*******************
+*******************
+*******************
+
+más info:
+
+Tienes un anemómetro HWFS-1 de salida analógica (0–2 V típico) y quieres conectarlo a un Amica ESP8266 NodeMCU. Esto implica dos aspectos clave: el nivel de voltaje y la adaptación del código Arduino.
+
+1️⃣ Voltaje y compatibilidad con ESP8266
+
+El ESP8266 NodeMCU tiene un ADC de 10 bits que mide entre 0–3.3 V, conectado al pin A0.
+Tu anemómetro produce 0–2 V típicos, con picos hasta 4 V (no recomendados).
+
+Como 2 V < 3.3 V, no necesitas divisor de tensión para el rango normal (<100 km/h).
+
+Si quieres medir picos hasta 4 V, sí necesitarías un divisor de tensión, por ejemplo usando dos resistencias en 
+serie (R1 y R2) para reducir a 3.3 V máximo:
+
+𝑉𝑜𝑢𝑡=𝑉𝑖𝑛×   𝑅2
+         --------
+         𝑅1+𝑅2
+Para 4 V → 3.3 V, el factor es 0.825. Por ejemplo: R1 = 1kΩ, R2 = 4.7kΩ.
+
+💡 Pero para uso típico (<100 km/h), puedes conectar directamente.
+
+2️⃣ Cableado al ESP8266
+
+GND (negro) → GND del NodeMCU
+
+Signal (negro con raya) → A0 del NodeMCU
+
+Nota: Solo hay un pin analógico en NodeMCU (A0), diferente del ESP32 que tiene varios (como el pin 34 de tu código).
+
+3️⃣ Adaptación del código
+
+Tu código de Arduino está escrito para ESP32 (analogRead devuelve 0–4095). En el ESP8266 NodeMCU:
+
+analogRead(A0) devuelve un valor de 0–1023 (10 bits).
+
+El pin es A0, no 34.
+
+El voltaje máximo es 3.3 V.
+
+Entonces el código adaptado sería:
+
+// Pin analógico del ESP8266
+#define WIND_SENSOR_PIN A0  
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int analogValue = analogRead(WIND_SENSOR_PIN); // 0–1023
+  float voltage = analogValue * 3.3 / 1023.0;     // Convertir a voltios
+  float windSpeedMS = voltage * 14.0;             // Velocidad en m/s
+  float windSpeedKMH = voltage * 50.0;            // Velocidad en km/h
+
+  Serial.print("Wind Speed: ");
+  Serial.print(windSpeedMS);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH);
+  Serial.println(" km/h");
+
+  delay(1000);
+}
+
+4️⃣ Resumen rápido
+
+Cableado: Negro → GND, Negro con raya → A0
+
+Divisor de tensión: No necesario para <100 km/h
+
+Código: Cambiar WIND_SENSOR_PIN a A0 y ajustar rango de analogRead de 0–4095 → 0–1023
+
+Voltaje: 0–2 V típico → 0–50 km/h (según tus cálculos)
+
+Si quieres, puedo hacerte un código mejorado que promedie varias lecturas y suavice el ruido, porque los anemómetros analógicos suelen dar señales un poco inestables. Esto te dará lecturas más estables de viento.
+
+¿Quieres que haga eso?
+
+Tú dijiste:
+quiero ponerle un divisor de tensión, adecuar el código acorde:
+ChatGPT Plus
+
+Perfecto. Vamos a hacer todo paso a paso: divisor de tensión para proteger el ESP8266 y código adaptado.
+
+1️⃣ Divisor de tensión
+
+Tu anemómetro puede dar hasta 4 V, y el A0 del ESP8266 soporta máximo 3.3 V.
+Queremos reducir el voltaje a un factor seguro:
+
+𝑉𝑜𝑢𝑡=𝑉𝑖𝑛×   𝑅2
+        ----------
+        𝑅1+𝑅2
+
+Queremos 4 V → 3.3 V
+
+    𝑅2          3.3
+---------= ------------ =0.825
+ 𝑅1+𝑅2           4
+
+Ejemplo de resistencias:
+
+R1 = 1 kΩ
+R2 ≈ 4.7 kΩ
+
+Esto da:
+            4.7
+𝑉𝑜𝑢𝑡=4× ---------- ≈ 3.3
+            1+4.7
+
+✅ Esto protege tu ESP8266 incluso con ráfagas de viento altas.
+
+Conexión del divisor:
+Anemómetro GND  ------------------- GND
+Anemómetro Signal ---- R1 ----+---- A0 del ESP8266
+                               |
+                              R2
+                               |
+                              GND
+
+
+GND del anemómetro → GND del NodeMCU
+
+Signal del anemómetro → R1 del divisor
+
+Nodo entre R1 y R2 → A0
+
+R2 → GND
+
+**************************
+2️⃣ Código adaptado USADO FINALMENTE************
+**************************
+Como ahora hay un divisor de tensión que reduce el voltaje por factor 0.825, hay que corregir el cálculo de velocidad.
+
+// Código para anemómetro HWFS-1 
+
+// Único pin analógico del ESP8266
+#define WIND_SENSOR_PIN A0   
+
+// Evitamos la posibilidad de que suba a 4V, máx 3.3v en A0
+const float DIVIDER_FACTOR = 0.825; 
+
+// Offset medido con el sensor quieto y conectado al ESP
+// (al estar quieto sin moverse hay veces que se muestra un valor residual)
+const float OFFSET_VOLTAGE = 0.039;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  // -------- PROMEDIO EN LAS LECTURAS ----------
+  int analogValue = 0;
+  for (int i = 0; i < 10; i++) {
+    analogValue += analogRead(WIND_SENSOR_PIN);
+    delay(2);
+  }
+  analogValue /= 10;
+
+  // -------- VOLTAJE ----------
+  float voltage = analogValue * 3.3 / 1023.0;
+  voltage = voltage / DIVIDER_FACTOR;
+
+  // -------- RESTAR OFFSET ----------
+  voltage -= OFFSET_VOLTAGE;
+  if (voltage < 0.0) voltage = 0.0;
+
+  // -------- VELOCIDAD ----------
+  float windSpeedMS = voltage * 14.0;
+  float windSpeedKMH = voltage * 50.0;
+
+  // -------- ELIMINAR VELOCIDAD RESIDUAL (A VECES MUESTRA 0.01KM/H) POR ----------
+  //      redondeos internos del float
+  //      multiplicación por 50.0
+  //      ruido mínimo de ±1 en la lectura ADC
+  if (windSpeedMS < 0.02) windSpeedMS = 0.0;
+  if (windSpeedKMH < 0.05) windSpeedKMH = 0.0;
+
+  // -------- SALIDA ----------
+  Serial.print("Voltaje ajustado: ");
+  Serial.print(voltage, 3);
+  Serial.print(" V | Velocidad viento: ");
+  Serial.print(windSpeedMS, 2);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH, 2);
+  Serial.println(" km/h");
+
+  delay(500);
+}
+✅ Resumen
+
+Divisor de tensión: R1 = 1 kΩ, R2 = 4.7 kΩ
+
+Pin: A0
+
+Factor de corrección: 0.825
+
+Código: Ajusta la lectura del ADC multiplicando por 3.3/1023 y luego dividiendo por 0.825
+
+Esto te permite leer hasta 4 V sin riesgo para tu NodeMCU y calcular correctamente la velocidad del viento.
+
+Si quieres, puedo hacer una versión del código que promedie 10–20 lecturas para que el valor de viento sea más estable, porque las señales del anemómetro pueden ser muy “temblorosas”.
+
+Conexión paso a paso
+    Conecta la tierra del anemómetro:
+        Cable negro del anemómetro → GND del NodeMCU
+    Conecta la señal a través de R1:
+        Cable negro con raya (Signal) del anemómetro → un extremo de R1
+    Conecta el nodo al pin A0:
+        Conecta el otro extremo de R1 a un nodo de conexión.
+        Desde este nodo → pin A0 del NodeMCU
+    Agrega R2 para completar el divisor:
+        Desde el mismo nodo → conecta R2 hacia GND del NodeMCU
+

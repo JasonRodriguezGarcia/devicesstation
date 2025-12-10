@@ -1,0 +1,112 @@
+Proyecto para la monitorización de temperatura y humedad ambiental. Los datos se guardarán en una base de datos
+de Pouch.db, que por ahora guardarán los siguientes campos en cada registro:
+{
+    "temperature": 15.5,
+    "humidity": 68,
+    "dateTime": "2025-04-20" <---NO HACE FALTA, EL ORDENADOR YA LO CREA EL SOLO ANTES DE GUARDAR EL REGISTRO
+}
+
+Material inicial
+- Modulo compatible ES8266 (otros valen igual)
+- Sensor DHT11
+- Red Wifi
+- Pc para el servidor express que recibirá las peticiones get con los datos
+- 3 cables para conectar el DHT11 al módulo y un cable usb para alimentar el módulo una vez programado.
+
+Fuente de información:
+https://www.youtube.com/watch?v=5NkyvyodCLE&ab_channel=LosProfesparavos
+https://randomnerdtutorials.com/esp8266-nodemcu-https-requests/#esp8266-https-requests-fingerprint
+
+Servidor express:
+- index.js
+    Recibe las peticiones del módulo ES8266
+Los datos de ejemplo registrados en varios ficheros comprimidos con extensión .rar:
+- data1.rar
+
+Fichero para programar con Arduino IDE (algo así como el Visual Studio Code de Arduino, pero con muchas mas funciones)
+- /weather/weather.ino
+    Versión inicial que funciona sin problemas
+    Programar el módulo ES8266 con las librerías y configuraciones que están en el propio fichero .ino
+    El Data del DHT11 estará en el pin 2
+
+- /weather2/weather2.ino
+    Versión con display led 1602 de 16x2 caracteres y módulo I2C (opcional)
+    Versión con sensor DHT22 que es mejor que el DHT11
+
+- /weather3/weather3.ino
+    Versión que permite conectar varios sensores localizados en distintas hubicaciones y enviando
+    información con su propio ID para diferenciarse unos de otros.
+
+- /weather4/weather4.ino
+    Versión que permite usar https, pero tenemos que conseguir el fingerprint de render.com. Para ello lo 
+    conseguimos desde el Bash de Git en VSC poniendo:
+        echo | openssl s_client -connect weatherstation-hyck.onrender.com:443 | openssl x509 -noout -fingerprint -sha1
+    su resultado podría ser:
+        Connecting to 216.24.57.4
+        depth=2 C=US, O=Google Trust Services LLC, CN=GTS Root R4
+        verify return:1
+        ... ... bla bla bla y
+        verify return:1
+        sha1 Fingerprint=73:73:73:DD:73:73:E7:37:37:37:DD:78:83:DA:C8:7A:E3:07:8C:7C
+        DONE
+    Nos quedamos con el Fingerprint sin los ":" ->> 737373DD7373E73737DD788DACF2C87BE3078C7C que es lo añadiremos
+    al código del .ino
+
+A investigar peticiones GET (google "hacer una peticion get con esp8266")
+    https://www.youtube.com/watch?v=Cak4MdBn8po
+
+
+ANEMOMETRO
+Nombre: Sensor de velocidad del viento pequeño
+
+Color: negro, naranja
+Descripción del producto
+Este sensor de velocidad del viento se ensambla con un sensor de generación de energía personalizado y una copa de viento 
+giratoria de tres tazas.Su principio de funcionamiento es que cuando hay un flujo de viento horizontal en el entorno, la 
+estructura especial de la copa de viento puede generar una rotación en dirección fija y accionar el sensor incorporado para 
+generar voltaje, que es directamente proporcional a la velocidad de rotación.Utilizando el cambio en el voltaje de la señal, 
+se puede medir la velocidad del viento ambiental.
+La velocidad máxima del viento ambiental permitida de este sensor es de 200 KM/H, el voltaje de salida máximo no supera los 
+4 V y el rango de uso nominal es inferior a 100 KM/H de velocidad del viento.En circunstancias normales, el voltaje de salida 
+es de 0-2 V.
+Este sensor es espontáneo y no requiere fuente de alimentación.Cuando hay viento que gira, genera una señal de voltaje.
+Este sensor de velocidad del viento es una estructura simple con precisión promedio y solo es adecuado para varios 
+controladores para la detección y comparación de la velocidad del viento ambiental, recopilando valores de voltaje de la señal
+ para uso de control.No es adecuado para aplicaciones de nivel de pronóstico meteorológico.
+
+Código a probar y añadir pantalla lcd
+void setup() {
+  Serial.begin(9600);  // Inicia la comunicación serial
+}
+
+void loop() {
+  int sensorValue = analogRead(A0);  // Lee el valor analógico (0–1023)
+  float voltage = sensorValue * (5.0 / 1023.0);  // Convierte a voltaje (0–5V)
+
+  float windSpeedKmh;  // Velocidad en km/h
+  float windSpeedMs;   // Velocidad en m/s
+
+  // Conversión de voltaje a velocidad en km/h
+  if (voltage <= 2.0) {
+    windSpeedKmh = voltage * 50.0;  // 0–2V → 0–100 km/h
+  } else if (voltage <= 4.0) {
+    windSpeedKmh = 100.0 + ((voltage - 2.0) * 50.0);  // 2–4V → 100–200 km/h
+  } else {
+    windSpeedKmh = 200.0;  // Límite físico
+  }
+
+  // Conversión a m/s
+  windSpeedMs = windSpeedKmh * 0.27778;
+
+  // Imprimir resultados en el monitor serial
+  Serial.print("Voltaje: ");
+  Serial.print(voltage, 2);
+  Serial.print(" V  |  Velocidad del viento: ");
+  Serial.print(windSpeedKmh, 1);
+  Serial.print(" km/h  |  ");
+  Serial.print(windSpeedMs, 2);
+  Serial.println(" m/s");
+
+  delay(1000);  // Espera 1 segundo antes de la próxima lectura
+}
+

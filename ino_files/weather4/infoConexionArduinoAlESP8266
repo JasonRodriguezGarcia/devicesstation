@@ -1,0 +1,405 @@
+Versión modificada: ESP8266 recibe los datos desde Arduino por Serial
+✔ Cambios principales realizados:
+
+Se elimina todo lo referente al sensor DHT.
+
+Se elimina la librería DHT.
+
+El ESP8266 ahora lee temperatura y humedad del puerto serial (Serial).
+
+Se incluye un pequeño parser para separar temp/hum.
+
+El resto del código (LCD, envío HTTPS, etc.) queda intacto.
+
+🔧 CÓDIGO MODIFICADO
+
+Solo copia y pega, ya está listo para usar.
+
+// ------------------------------
+//    WEATHER STATION (ESP8266)
+//   Recibe datos desde Arduino
+// ------------------------------
+
+// Esto para ESP8266
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+
+// HTTPS
+#include <WiFiClientSecure.h>
+
+// LCD I2C
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
+
+// URL de API
+const char* apiBaseUrl = "https://weatherstation-hyck.onrender.com/api/v1/";
+const char* apiKey = "tu_clave_de_api";
+
+String deviceId;
+
+// ------------------
+// CONFIGURACIÓN
+// ------------------
+void setup() {
+    Serial.begin(9600);     // PARA RECIBIR DATOS DESDE ARDUINO
+    Serial.setTimeout(2000);
+
+    // LCD
+    lcd.init();
+    lcd.backlight();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Weather Station");
+    lcd.setCursor(0, 1);
+    lcd.print("Booting...");
+
+    // WIFI
+    WiFi.begin("xxxxxxxx", "xxxxxxxx");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.println("Conectando WIFI...");
+    }
+
+    Serial.println("WiFi conectado!");
+
+    deviceId = WiFi.macAddress();
+    deviceId.replace(":", "");
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("MAC: ");
+    lcd.print(deviceId);
+
+    delay(2000);
+}
+
+void loop() {
+
+  // --------------------------
+  // LEER DATOS DEL ARDUINO
+  // --------------------------
+  if (Serial.available()) {
+      String data = Serial.readStringUntil('\n');
+      data.trim();
+
+      Serial.print("Recibido: ");
+      Serial.println(data);
+
+      // ESPERA FORMATO: TEMP,HUM
+      float temperature_data = NAN;
+      float humidity_data = NAN;
+
+      int coma = data.indexOf(',');
+
+      if (coma > 0) {
+          temperature_data = data.substring(0, coma).toFloat();
+          humidity_data = data.substring(coma + 1).toFloat();
+      }
+
+      if (isnan(temperature_data) || isnan(humidity_data)) {
+          Serial.println("ERROR: Datos recibidos inválidos");
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Datos invalidos");
+          return;
+      }
+
+      // Mostrar en LCD
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Temp: ");
+      lcd.print(temperature_data);
+      lcd.print(" C");
+
+      lcd.setCursor(0,1);
+      lcd.print("Hum: ");
+      lcd.print(humidity_data);
+      lcd.print(" %");
+
+      // Enviar a API
+      sendDataToApi(temperature_data, humidity_data);
+  }
+
+  delay(200);
+}
+
+
+
+// -----------------------------------------
+// ENVÍO DE DATOS A LA API
+// -----------------------------------------
+void sendDataToApi(float temperature_data, float humidity_data) {
+  WiFiClientSecure client;
+  client.setInsecure();       // <<< si quieres evitar fingerprint
+
+  HTTPClient http;
+
+  String url = String(apiBaseUrl) + "meassures";
+  Serial.println("URL: " + url);
+
+  http.begin(client, url);
+
+  http.addHeader("Content-Type", "application/json");
+
+  String jsonData = "{\"device_id\": \"" + deviceId +
+                    "\", \"temperature\": " + String(temperature_data) +
+                    ", \"humidity\": " + String(humidity_data) + "}";
+
+  int httpCode = http.POST(jsonData);
+
+  if (httpCode > 0) {
+      if (httpCode >= 200 && httpCode < 300) {
+          Serial.println("OK: " + http.getString());
+      } else {
+          Serial.println("Error HTTP: " + String(httpCode));
+      }
+  } else {
+      Serial.println("Error conexion: " + String(http.errorToString(httpCode)));
+  }
+
+  http.end();
+}
+
+📌 ¿Qué debe enviar tu Arduino?
+
+Código ejemplo del ARDUINO UNO / NANO:
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  float t = 25.4;
+  float h = 60.2;
+
+  Serial.print(t);
+  Serial.print(",");
+  Serial.println(h);
+
+  delay(2000);
+}
+
+✔ Con esto ya tienes:
+
+Arduino → envía temperatura y humedad por Serial
+
+ESP8266 → recibe los datos
+
+Muestra en LCD
+
+Envía JSON a la API
+
+No depende de DHT11/DHT22
+
+Si quieres, puedo:
+
+✅ Adaptar el código a un Arduino Mega, Nano, Pro Mini, etc.
+✅ Hacer la comunicación por SoftwareSerial si tu Arduino tiene un solo puerto.
+✅ Enviar formato JSON en lugar de "temp,hum".
+
+¿Quieres que te prepare también el código del Arduino?
+
+Tú dijiste:
+como conectar el ardunio al ESP8266
+ChatGPT Plus
+
+Aquí tienes la forma correcta y segura de conectar un Arduino a un ESP8266 para enviar datos por Serial.
+Te doy todas las opciones, incluida la forma segura (con divisor de voltaje) porque el ESP8266 NO soporta 5V en su pin RX.
+
+✅ 1) Identifica qué ESP8266 tienes
+
+Las dos variantes más comunes:
+
+✔ NodeMCU / Wemos D1 Mini (ESP8266 con USB)
+
+Funciona a 3.3V pero sus pines son tolerantes a 5V por el regulador/convertidor USB.
+
+Puedes conectar directamente el TX del Arduino a RX del ESP8266 si usas SoftwareSerial a 9600 bps.
+
+✔ ESP-01 o módulo ESP8266 “puro”
+
+NO tolera 5V
+
+Necesitas un adaptador de nivel (divisor de voltaje) en RX.
+
+Dime cuál tienes y te ajusto el esquema exacto, pero te pongo ambos.
+
+🔌 2) Conexión para NodeMCU / Wemos D1 Mini
+
+(la más típica y fácil)
+
+⭐ SOLO ESTOS 4 CABLES:
+Arduino TX  →  ESP8266 RX (GPIO3)
+Arduino GND →  ESP8266 GND
+
+
+⚠ IMPORTANTE:
+
+NO uses el pin TX/RX hardware del ESP8266 porque es el mismo que usa para programación.
+
+Es mejor usar SoftwareSerial en el ESP8266 en pines como D5–D6.
+
+🔧 Conexión recomendada:
+Arduino	ESP8266
+TX →	D5 (GPIO14)
+GND →	GND
+
+Luego en el ESP8266 usas:
+
+#include <SoftwareSerial.h>
+SoftwareSerial arduinoSerial(D5, D6); // RX, TX
+
+
+(Solo usarás D5 como RX, y D6 no se conecta si solo recibes datos.)
+
+🔌 3) Conexión para ESP8266-01 o módulo “puro”
+
+Necesitas bajar el voltaje del TX del Arduino (5V) a RX del ESP8266 (3.3V):
+
+⭐ Divisor de voltaje:
+Arduino TX ---- 1kΩ ----+---- ESP8266 RX
+                        |
+                       2kΩ
+                        |
+                       GND
+
+
+O un módulo adaptador de nivel lógico.
+
+⚡ Alimentación
+✔ Si usas NodeMCU / Wemos:
+
+Se alimenta por USB directamente.
+
+Arduino puede alimentarse aparte sin problema.
+
+Solo necesitas compartir GND.
+
+✔ Si usas ESP8266-01:
+
+Necesita 3.3V estable con mínimo 300 mA (ojo).
+
+NO alimentarlo desde el pin 3.3V del Arduino.
+
+🟦 Resumen según tu objetivo
+
+Quieres que:
+
+Arduino → envía temperatura y humedad → ESP8266 la recibe y la envía por WiFi
+
+Conexión mínima:
+
+Arduino GND → ESP8266 GND
+Arduino TX  → ESP8266 RX (con divisor si es módulo puro)
+
+📌 ¿Qué Arduino tienes? ¿Y qué ESP8266 exactamente?
+
+Dime modelo exacto (Arduino UNO/Nano/Mega + NodeMCU/Wemos/ESP-01) y te hago:
+
+El diagrama exacto
+
+El código listo para copiar/pegar para ambos
+
+La velocidad serial recomendada
+
+Cómo verificar que la comunicación funciona
+
+Si me dices tu hardware, te lo dejo 100% afinado.
+
+Tú dijiste:
+NodeMCU
+ChatGPT Plus
+
+Perfecto, con un NodeMCU (ESP8266) la conexión con el Arduino es muy sencilla y segura, porque puedes usar SoftwareSerial y NO necesitas adaptadores de voltaje.
+
+Aquí tienes el esquema exacto, el cableado, y el código listo para usar.
+
+🔌 🔧 CONEXIÓN ARDUINO → NODEMCU (ESP8266)
+⭐ SOLO 2 CABLES:
+Arduino	NodeMCU
+TX	D5 (GPIO14)
+GND	GND
+
+⛔ NO conectes el RX del Arduino (no lo necesitas si solo el Arduino envía datos).
+⛔ NO uses el pin RX del ESP8266 (GPIO3) porque es el mismo que usa para programarse.
+
+📡 ¿Por qué D5 como RX del ESP8266?
+
+Porque el NodeMCU tiene los pines TX0 / RX0 reservados para USB–serial.
+Usar D5 evita interferencias.
+
+🔧 CÓDIGO PARA EL ESP8266 (NodeMCU)
+
+Este fragmento sustituye tu lectura del DHT y usa SoftwareSerial:
+
+#include <SoftwareSerial.h>
+
+// RX=D5, TX no usado
+SoftwareSerial arduinoSerial(D5, D6); // D6 no hace falta conectar
+
+void setup() {
+  Serial.begin(9600);       // Debug por USB
+  arduinoSerial.begin(9600); // Lectura desde Arduino
+}
+
+void loop() {
+  if (arduinoSerial.available()) {
+    String data = arduinoSerial.readStringUntil('\n');
+    data.trim();
+    Serial.println("Recibido del Arduino: " + data);
+    
+    // Aquí haces tu parseo: "25.4,60.2"
+    int coma = data.indexOf(',');
+    if (coma > 0) {
+      float temperature = data.substring(0, coma).toFloat();
+      float humidity = data.substring(coma + 1).toFloat();
+      
+      Serial.println("Temperatura: " + String(temperature));
+      Serial.println("Humedad: " + String(humidity));
+
+      // Aquí llamas a tu función sendDataToApi(...)
+    }
+  }
+}
+
+🔧 CÓDIGO DEL ARDUINO
+
+Ejemplo: Arduino envía temperatura y humedad cada 2 segundos:
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  float t = 24.5;
+  float h = 60.1;
+
+  Serial.print(t);
+  Serial.print(",");
+  Serial.println(h);
+
+  delay(2000);
+}
+
+📌 Comprobación rápida
+
+Para verificar que funciona:
+
+Conecta Arduino TX → NodeMCU D5
+
+Conecta GND ↔ GND
+
+Abre el Monitor Serial del NodeMCU (9600)
+
+Debes ver algo como:
+
+Recibido del Arduino: 24.5,60.1
+Temperatura: 24.50
+Humedad: 60.10
+
+✔ Ahora ya puedes integrar esta lectura en tu código final
+
+Si quieres, puedo insertarlo dentro de tu código completo (el que envía a la API HTTPS) para que te quede todo junto y funcionando de inmediato.

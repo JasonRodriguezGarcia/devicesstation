@@ -1,0 +1,56 @@
+// Código para anemómetro HWFS-1 
+
+// Único pin analógico del ESP8266
+#define WIND_SENSOR_PIN A0   
+
+// Evitamos la posibilidad de que suba a 4V, máx 3.3v en A0
+const float DIVIDER_FACTOR = 0.825; 
+
+// Offset medido con el sensor quieto y conectado al ESP
+// (al estar quieto sin moverse hay veces que se muestra un valor residual)
+const float OFFSET_VOLTAGE = 0.039;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  // -------- PROMEDIO EN LAS LECTURAS ----------
+  int analogValue = 0;
+  for (int i = 0; i < 10; i++) {
+    analogValue += analogRead(WIND_SENSOR_PIN);
+    delay(2);
+  }
+  analogValue /= 10;
+
+  // -------- VOLTAJE ----------
+  float voltage = analogValue * 3.3 / 1023.0;
+  voltage = voltage / DIVIDER_FACTOR;
+
+  // -------- RESTAR OFFSET ----------
+  voltage -= OFFSET_VOLTAGE;
+  if (voltage < 0.0) voltage = 0.0;
+
+  // -------- VELOCIDAD ----------
+  float windSpeedMS = voltage * 14.0;
+  float windSpeedKMH = voltage * 50.0;
+
+  // -------- ELIMINAR VELOCIDAD RESIDUAL (A VECES MUESTRA 0.01KM/H) POR ----------
+  //      redondeos internos del float
+  //      multiplicación por 50.0
+  //      ruido mínimo de ±1 en la lectura ADC
+  if (windSpeedMS < 0.02) windSpeedMS = 0.0;
+  if (windSpeedKMH < 0.05) windSpeedKMH = 0.0;
+
+  // -------- SALIDA ----------
+  Serial.print("Voltaje ajustado: ");
+  Serial.print(voltage, 3);
+  Serial.print(" V | Velocidad viento: ");
+  Serial.print(windSpeedMS, 2);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH, 2);
+  Serial.println(" km/h");
+
+  delay(500);
+}
