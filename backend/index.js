@@ -1,4 +1,3 @@
-// meassure, penúltima versión antes del cambio a rutas avanzadas con la creación de db.js, meassure.js
 import express from "express";
 import path from "path";
 import cors from 'cors';
@@ -56,14 +55,14 @@ const db = new CustomPouch("devices");
 // Para configurar cors
 const corsOptions = { 
     // poner más dentro de los "[]" separados por "," cuando tenga la web del deployment
-    origin: ["http://localhost:3000", "https://weatherstation-1-zu3u.onrender.com", "*"], 
+    origin: ["http://localhost:3000", "https://devicesstation.onrender.com", "*"], 
     // methods:["POST"] // sin esta línea se deja todos los methods
 }
 app.use(cors()); // to be able access from frontend, because they are not on same directory?¿server¿?
 // Habilita el parsing de JSON en los requests.
 // Es decir, cuando un cliente (como React) envía datos en formato JSON (por ejemplo, en un POST o PUT), Express puede leerlos desde req.body.
 app.use(express.json());
-// app.use('/api/v1/meassures', usersRouters)
+// app.use('/api/v1/measures', usersRouters)
 
 // ********************************************
 // ********************************************
@@ -145,16 +144,16 @@ app.get('/api/v1/devices', async (req, res) => {
         const result = await db.allDocs({ include_docs: true });
         // console.log(result);
   
-        // Filter the meassure if 'type' is used in the document
+        // Filter the measure if 'type' is used in the document
         const devices = result.rows
-            .filter(row => row.doc.type === 'devices')  // Ensure the document type is 'meassure'
+            .filter(row => row.doc.type === 'devices')  // Ensure the document type is 'measure'
             .map(row => row.doc);  // Map to get the document content
 
         console.log("Imprimo devices en /devices: ", devices)
  
         res.status(200).json(devices);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to retrieve meassure' });
+        res.status(500).json({ error: 'Failed to retrieve measure' });
     }
 });
 
@@ -166,7 +165,7 @@ app.delete('/api/v1/device/:device_id', async (req, res) => {
     const selector = { deviceMAC: device_id }
 
     try {
-        const deleteDevice = await db.find({selector})   // cogemos documento (meassure)
+        const deleteDevice = await db.find({selector})   // cogemos documento (measure)
         if (!deleteDevice.docs.length) {
             return res.status(404).json({ error: "Not found" })
         }
@@ -175,13 +174,13 @@ app.delete('/api/v1/device/:device_id', async (req, res) => {
         res.status(200).json({message: "Deleted OK"})
 
     } catch (error) {
-        res.status(500).json({ error: 'Failed to delete meassure' });
+        res.status(500).json({ error: 'Failed to delete measure' });
     }
 });
 
 // *************************
 // *************************
-// *** meassures start   ***
+// *** measures start   ***
 // *************************
 // *************************
 // TAMBIÉN PODRÍAMOS PROBAR LAS APIS CON POSTMAN
@@ -198,41 +197,41 @@ app.delete('/api/v1/device/:device_id', async (req, res) => {
     //     },
     //     "date":"4/12/2025, 10:16:17"
     // }
-app.get('/api/v1/meassures', async (req, res) => {  /// PENDING TO CORRECT !!!
+app.get('/api/v1/measures', async (req, res) => {  /// PENDING TO CORRECT !!!
     try {
         // Fetch all documents from the 'wheather_db'
         const result = await db.allDocs({ include_docs: true });
         // console.log(result);
   
-        // Extract meassure data from the documents
-        // const meassure = result.rows.map(row => row.doc);
+        // Extract measure data from the documents
+        // const measure = result.rows.map(row => row.doc);
 
-        // Filter the meassure if 'type' is used in the document
-        const meassures = result.rows
-            .filter(row => row.doc.type === 'tempHum')  // Ensure the document type is 'meassure'
+        // Filter the measure if 'type' is used in the document
+        const measures = result.rows
+            .filter(row => row.doc.type === 'tempHum')  // Ensure the document type is 'measure'
             .map(row => row.doc);  // Map to get the document content
  
-        // Send the meassure as JSON response
-        res.status(200).json(meassures);
+        // Send the measure as JSON response
+        res.status(200).json(measures);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to retrieve meassure' });
+        res.status(500).json({ error: 'Failed to retrieve measure' });
     }
 });
   
 // ✅ Endpoint de salud básico (para Render / UptimeRobot-pending)
 // Usaremos este Endpoint para que el backend en Render que es gratuíto no entre en stand-by
-app.get("/api/v1/meassures/health", (req, res) => {
+app.get("/api/v1/measures/health", (req, res) => {
     console.log("Llamando a Health para no entrar en stand-by...")
     res.status(200).send("OK")
 })
 
-app.post('/api/v1/meassures', async (req, res) => {
+app.post('/api/v1/measures', async (req, res) => {
     try {
-        const meassure = req.body; // meassure data from request body
+        const measure = req.body; // measure data from request body
         const {device_id, type, description, data} = req.body;
         
-        // Insert new meassure into the database
-        // const response = await db.post(meassure);
+        // Insert new measure into the database
+        // const response = await db.post(measure);
 
         // Check if device is in devices table
         const selector = {
@@ -279,67 +278,67 @@ app.post('/api/v1/meassures', async (req, res) => {
         devicesPrevious.push(device_id)
         
         // Respond with success
-        res.status(201).json({ id: device_id, ...meassure })
+        res.status(201).json({ id: device_id, ...measure })
     } catch (error) {
         console.log("ERROR: ", error)
-        res.status(500).json({ error: 'Failed to add meassure' })
+        res.status(500).json({ error: 'Failed to add measure' })
     }
 })
 
-// app.delete('/api/v1/meassures/:id', async (req, res) => {
+// app.delete('/api/v1/measures/:id', async (req, res) => {
 
 //     const {id} = req.params
 //     try {
-//         const meassure = await db.get(id)   // getting document (meassure)
-//         await db.remove(meassure)   // deleting document
+//         const measure = await db.get(id)   // getting document (measure)
+//         await db.remove(measure)   // deleting document
 //         res.status(200).json({message: "Deleted OK"})
 
 //     } catch (error) {
-//         res.status(500).json({ error: 'Failed to delete meassure' });
+//         res.status(500).json({ error: 'Failed to delete measure' });
 //     }
 // });
 
-// app.get('/api/v1/meassures/:id', async (req, res) => {
+// app.get('/api/v1/measures/:id', async (req, res) => {
 
 //     const {id} = req.params
 //     try {
-//         const meassure = await db.get(id)   // getting document (meassure)
-//         res.status(200).json({ ...meassure})
+//         const measure = await db.get(id)   // getting document (measure)
+//         res.status(200).json({ ...measure})
 
 //     } catch (error) {
 //         res.status(500).json({ error: "Failed to get, Id not found" });
 //     }
 // });
 
-// app.put('/api/v1/meassures/:id', async (req, res) => {
+// app.put('/api/v1/measures/:id', async (req, res) => {
 //     try {
-//         const { id } = req.params;  // Get the meassure ID from the URL
-//         const updatedmeassure = req.body;  // The updated meassure data from the request body
+//         const { id } = req.params;  // Get the measure ID from the URL
+//         const updatedmeasure = req.body;  // The updated measure data from the request body
 
-//         // Fetch the current meassure data using the ID
-//         const existingmeassure = await db.get(id);
+//         // Fetch the current measure data using the ID
+//         const existingmeasure = await db.get(id);
         
-//         // Update the existing meassure's data with the new data
+//         // Update the existing measure's data with the new data
 //         const updatedDoc = {
-//             ...existingmeassure,
-//             ...updatedmeassure, // This will overwrite any matching fields
+//             ...existingmeasure,
+//             ...updatedmeasure, // This will overwrite any matching fields
 //         };
 
 //         // Save the updated document back to the database
 //         const response = await db.put(updatedDoc);
 
-//         // Send back the updated meassure data
+//         // Send back the updated measure data
 //         res.status(200).json({
 //             id: response.id,
 //             rev: response.rev,
-//             ...updatedmeassure,  // The updated fields from the request
+//             ...updatedmeasure,  // The updated fields from the request
 //         });
 //     } catch (error) {
-//         res.status(500).json({ error: 'Failed to update meassure' });
+//         res.status(500).json({ error: 'Failed to update measure' });
 //     }
 // });
 
-// ********** meassure end ***************
+// ********** measure end ***************
 //*****************************************
 
 
