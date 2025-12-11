@@ -161,14 +161,14 @@ void sendDataToApi(float windSpeedMS, float windSpeedKMH) {
   WiFiClientSecure client;
   //   Versión que permite usar https, pero tenemos que conseguir el fingerprint de render.com (donde está alojado el
   //   backend). Para ello lo conseguimos desde el Bash de Git en VSC poniendo:
-  //     echo | openssl s_client -connect weatherstation-hyck.onrender.com:443 | openssl x509 -noout -fingerprint -sha1
+  //     echo | openssl s_client -connect devicesstation-backend.onrender.com:443 | openssl x509 -noout -fingerprint -sha1
   // OJO PONER EL RESULTADO SIN LOS ":"
   // EN RENDER SE CAMBIA EL FINGERPRINT CADA "X" MESES, POR LO QUE IGUAL NO FUNCIONA MÁS TARDE
   client.setFingerprint("A8EE4611100C0E7D4E9D25EB6350683045916B28"); 
   
   HTTPClient http;
   
-  String url = String(apiBaseUrl) + "meassures";
+  String url = String(apiBaseUrl) + "measures";
   Serial.println("URL de solicitud: " + url);
   
   bool isHttps = url.startsWith("https");

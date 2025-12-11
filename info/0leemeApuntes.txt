@@ -1,3 +1,10 @@
+Git
+    git add .
+    git commit -m "first commit"
+    git remote add origin https://github.com/JasonRodriguezGarcia/miproyecto.git
+    git branch -M main
+    git push -u origin main
+
 CREAR DIRECTORIO mern
 
 ABRIR DIRECTORIO mern EN VSC (VISUAL STUDIO CODE)
