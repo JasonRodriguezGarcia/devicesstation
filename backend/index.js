@@ -248,7 +248,7 @@ app.post('/api/v1/measures', async (req, res) => {
         // Either if exist or not one device, it will be updated/created with last temp. and humid. registry
         if (deviceExist.docs.length !== 0){
             // if device exist, update new fields data with last registry
-            console.log(`EXISTE ${device_id}, actualizando registro con nuevos datos`)
+            console.log(`EXISTE ${device_id}, actualizando registro con nuevos datos `, new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid" }))
             const existingDevice = deviceExist.docs[0];
             const updatedDevice = {
                 _id: existingDevice._id,
@@ -263,7 +263,8 @@ app.post('/api/v1/measures', async (req, res) => {
             
         } else {
             // if not exist, a new deviced is created with temp. and humid.
-            console.log(`NO EXISTE ${device_id} !! Creando registro nuevo`)  // deviceExist.docs will be [] (empty)
+            // deviceExist.docs will be [] (empty)
+            console.log(`NO EXISTE ${device_id} !! Creando registro nuevo `, new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid" }))  
             let device = {
                 deviceMAC: device_id,
                 type, 
@@ -278,7 +279,7 @@ app.post('/api/v1/measures', async (req, res) => {
         devicesPrevious.push(device_id)
         
         // Respond with success
-        res.status(201).json({ id: device_id, ...measure })
+        res.status(201).json({ ...measure })
     } catch (error) {
         console.log("ERROR: ", error)
         res.status(500).json({ error: 'Failed to add measure' })

@@ -5,8 +5,6 @@ import "./font.css"
 
 const BACKEND_URL_RENDER = process.env.REACT_APP_BACKEND_URL_RENDER
 console.log ("backend_url_render: ", BACKEND_URL_RENDER)
-// const apiDevices = "http://localhost:5000/api/v1/devices"
-// const apiDevices = "https://weatherstation-hyck.onrender.com/api/v1/devices"
 
 function Device() {
 
@@ -54,8 +52,13 @@ function Device() {
 
     return (
     <div>
-        <Box component="div" sx={{display: "flex", flexDirection: "column", alignItems: "center"}}>
-            <Typography variant="h1">
+    <Box component="div" sx={{backgroundColor: "#035bffff", height: "100vh"}}>
+
+        <Box component="div" sx={{display: "flex", flexDirection: "column", alignItems: "center"}}
+        >
+            <Typography variant="h1" sx={{ backgroundColor: "#2137ffff", color: "white", padding: "20px", 
+                border: "3px solid", borderRadius: "10px", marginY: "10px"
+            }}>
                 Devices station
             </Typography>
             {devices.length > 0 ?
@@ -72,7 +75,6 @@ function Device() {
                                 if (!notNeededFields.includes(dev[0])) // usamos .some por ser array, si objeto .includes
                                     if (typeof(dev[1]) === 'object') {
                                         resultTypo = Object.entries(dev[1]).map((value, index) => {
-                                            // return <li>{value[0]}: {value[1]}</li>
                                             return (
                                                 <Typography key={index} sx={{fontFamily: 'LcdDot', fontSize: "10px", lineHeight: "30px"}}>
                                                     {value[0]}: {value[1]}
@@ -97,6 +99,7 @@ function Device() {
                 ))
             : <Typography>NO DEVICES AVAILABLE !!</Typography> }
         </Box>
+    </Box>
     </div>
     );
 }

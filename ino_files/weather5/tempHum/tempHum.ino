@@ -58,7 +58,7 @@ void setup() {
   if(digitalRead(CONFIG_PIN) == LOW){
       apiBaseUrl = "http://192.168.0.20:5000/api/v1/"; // LOCAL
   }else{
-      apiBaseUrl = "https://devicesstation.onrender.com/api/v1/"; // REMOTO
+      apiBaseUrl = "https://devicesstation-backend.onrender.com/api/v1/"; // REMOTO
   }
 
   Serial.print("API URL seleccionada: ");
