@@ -1,0 +1,15 @@
+En esta versión los dispositivos enviarán datos a backend con el siguiente formato Json:
+
+{
+	"id":"5c289618-cc00-4862-98ba-fbb365652574",
+	"device_id":"8CAAB57D81E7",
+	"type":"Weather sensor",
+	"data": {
+		"temperature":21.1,
+		"humidity":56.4
+	},
+	"date":"4/12/2025, 10:16:17"
+}
+
+Estos se enviarán a frontend donde se desestructura dinámicamente al formato oportuno
+

@@ -2,6 +2,7 @@
 // POSIBILIDAD DE CAMBIAR ENTRE SENSOR DHT11 (SENCILLO) POR DHT22 (MEJORADO)
 // ENVIA ID DEL DISPOSITIVO PARA PODER IDENTIFICAR PROCEDENCIA DE DATOS DE DISTINTOS DISPOSITIVOS EN BACKEND
 // PERTIME EL USO DE BACKEND HTTPS O HTTP LOCAL AL HACER LLAMADA A API, SELECCIONABLE CON pin D6 a masa.
+// AÑADIDO CONFIG.H PARA SER USADA COMO VARIABLE DE ENTORNO A LO .ENV EN REACT.
 
 // Para poder trabajar y programar este módulo compatible Arduino, hay que descargar arduino ide de 
 // https://www.arduino.cc/en/software/
@@ -19,6 +20,8 @@
 
 
 // https://www.youtube.com/watch?v=5NkyvyodCLE&ab_channel=LosProfesparavos
+
+#include "config.h"             // variables de entorno (escondidas en un config.h)
 
 // Esto para ESP8266
 #include <ESP8266WiFi.h>        // libreria para el wifi
@@ -56,9 +59,11 @@ void setup() {
   lastState = digitalRead(CONFIG_PIN);
 
   if(digitalRead(CONFIG_PIN) == LOW){
-      apiBaseUrl = "http://192.168.0.20:5000/api/v1/"; // LOCAL
+      // LOCAL
+      apiBaseUrl = APIBASEURLLOCAL; 
   }else{
-      apiBaseUrl = "https://devicesstation-backend.onrender.com/api/v1/"; // REMOTO
+      // REMOTO
+      apiBaseUrl = APIBASEURLREMOTO; 
   }
 
   Serial.print("API URL seleccionada: ");
@@ -75,7 +80,7 @@ void setup() {
   
   dht.begin(); // INICIALIZA SENSOR DHT22
 
-  WiFi.begin("xxxxxxxxxx", "xxxxxxxxxxxxx"); // poner nombre wifi y contraseña
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // poner nombre wifi y contraseña
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -155,12 +160,9 @@ void sendDataToApi(float temperature_data, float humidity_data) {
   
   bool isHttps = url.startsWith("https");
 
-//   http.begin(client, url);
-
   if (isHttps) {
       Serial.println("🔒 Modo HTTPS");
 
-    //   WiFiClientSecure client;
       if (!http.begin(client, url)) {
         Serial.println("❌ Error iniciando conexión HTTPS");
         return;

@@ -60,7 +60,7 @@ void setup() {
   lcd.print("Booting ...");
   
   // poner nombre wifi y contraseña
-  WiFi.begin("vodafone3CAA", "NZWR3LH9ACXPR4"); 
+  WiFi.begin("xxxxxxxx", "xxxxxxxxxxxxxxx"); 
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);

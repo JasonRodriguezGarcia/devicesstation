@@ -1,45 +1,28 @@
-// VERSION CON LCD 1602 16X2 CON MODULO I2C (OPCIONAL)
-// POSIBILIDAD DE CAMBIAR ENTRE SENSOR DHT11 (SENCILLO) POR DHT22 (MEJORADO)
-// ENVIA ID DEL DISPOSITIVO PARA PODER IDENTIFICAR PROCEDENCIA DE DATOS DE DISTINTOS DISPOSITIVOS EN BACKEND
-// PERTIME EL USO DE BACKEND HTTPS O HTTP LOCAL AL HACER LLAMADA A API, SELECCIONABLE CON pin D6 a masa.
-
-// Para poder trabajar y programar este módulo compatible Arduino, hay que descargar arduino ide de 
-// https://www.arduino.cc/en/software/
-// Luego hay que configurar varias cosas.
-// Tengo una placa (China) detectada como LilyGo T-Display en com6 pero se puede usar como Generic ESP8266
-// Para añadir DHT.h librería con (mi versión es en inglés)
-// Sketch / include library / manage libraries y buscar dht sensor library e instalar
-// Para añadir esp8266 en archivo / preferencias / additional boards manager url añadir
-// http://arduino.esp8266.com/stable/package_esp8266com_index.json
-// y en tools / board / board manager ya aparecerá ESP8266 instalar
-// luego en tools / board / aparecerá ESP8266 / Generic ESP8266 module
-// después en tools / Flash Size / poner 4MB(FS: 1MB OTA: 1019kb)
-// Instalar la librería LiquidCrystal_I2C desde el Administrador de Bibliotecas (Tools / Manage libraries).
-// Instalar la librería Base 64 desde Sketch → Include Library → Manage Libraries
-
-
-// https://www.youtube.com/watch?v=5NkyvyodCLE&ab_channel=LosProfesparavos
-
-// Esto para ESP8266
+// Código para anemómetro HWFS-1 
+#include "config.h"             // variables de entorno (escondidas en un config.h)
 #include <ESP8266WiFi.h>        // libreria para el wifi
 #include <ESP8266HTTPClient.h>  // libreria httpclient
-#include <DHT.h>                // libreria sensor dht11
-#define DHTPIN 2                // definiendo pin data del DHT11
-// #define DHTTYPE DHT11        // Definiendo el tipo de DHT para ser DHT11, lee cada 1 segundo
-#define DHTTYPE DHT22           // Definiendo el tipo de DHT para ser DHT22, lee cada 2 segundos
-DHT dht(DHTPIN, DHTTYPE);
-// Esto para el permitir https
-#include <WiFiClientSecure.h>  // Añade esta librería arriba para https
+#include <WiFiClientSecure.h>   // Esto para el permitir https
 // Esto es para el el LCD 16x2
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 // Dirección I2C común: 0x27 o 0x3F
 // LiquidCrystal_I2C lcd(0x27, 16, 2);  // PARA DIRECCION 0x27
 LiquidCrystal_I2C lcd(0x3F, 16, 2);     // PARA DIRECCION 0x3F
+
 #define CONFIG_PIN 12  // GPIO12 osea D6 mostrado en la placa OJO  // Pin que selecciona URL
+
+// Único pin analógico del ESP8266
+#define WIND_SENSOR_PIN A0   
+
 // Declara apiBaseUrl como puntero a char normal, no const para asignar mas tarde
 const char* apiBaseUrl;
-// const char* apiKey = "tu_clave_de_api";
+
+// Evitamos la posibilidad de que suba a 4V, máx 3.3v en A0
+const float DIVIDER_FACTOR = 0.825; 
+
+// Contador de tiempo para la llamada API
+int contadorAPI = 0;
 
 // Variable a usar para el cambio de estado del pin 12 (GPIO12 osea D6)
 // y poder conectar o desconectar el pin y el cambio se haga al vuelo
@@ -47,18 +30,21 @@ static bool lastState = HIGH;
 
 String deviceId; // define variable para poder identificar dispositivo en backend
 
-void setup() {
-  Serial.begin(9600); // para mostar los Serial.print() en la consola
+// Offset medido con el sensor quieto y conectado al ESP
+// (al estar quieto sin moverse hay veces que se muestra un voltaje con valor residual en este caso 0.039)
+const float OFFSET_VOLTAGE = 0.039;
 
-  // Para seleccionar apiBaseUrl según D5 si está conectado a masa o no
+void setup() {
+  Serial.begin(9600);
+    // Para seleccionar apiBaseUrl según D5 si está conectado a masa o no
   pinMode(CONFIG_PIN, INPUT_PULLUP);
   // Guarda el estado ACTUAL del pin como estado inicial
   lastState = digitalRead(CONFIG_PIN);
 
   if(digitalRead(CONFIG_PIN) == LOW){
-      apiBaseUrl = "http://192.168.0.20:5000/api/v1/"; // LOCAL
-  }else{
-      apiBaseUrl = "https://devicesstation-backend.onrender.com/api/v1/"; // REMOTO
+      apiBaseUrl = APIBASEURLLOCAL; // LOCAL
+  } else {
+      apiBaseUrl = APIBASEURLREMOTO; // REMOTO
   }
 
   Serial.print("API URL seleccionada: ");
@@ -69,13 +55,12 @@ void setup() {
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0); // Columna 0, línea 0
-  lcd.print("Weather Station");
+  lcd.print("Anemomother");
   lcd.setCursor(0, 1); // Columna 0, línea 1
   lcd.print("Booting ...");
   
-  dht.begin(); // INICIALIZA SENSOR DHT22
-
-  WiFi.begin("xxxxxxxxxx", "xxxxxxxxxxxxx"); // poner nombre wifi y contraseña
+  // poner nombre wifi y contraseña
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD); 
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -84,7 +69,8 @@ void setup() {
 
   Serial.println("Conexión WiFi establecida");
 
-  Serial.print("IP del ESP8266: "); // DATO INFORMATIVO SIN MAS
+  // DATO INFORMATIVO SIN MAS
+  Serial.print("IP del ESP8266: "); 
   Serial.println(WiFi.localIP());
 
   lcd.setCursor(0, 1);            // Columna 0, línea 1
@@ -92,7 +78,6 @@ void setup() {
   deviceId.replace(":", "");      // eliminar los dos puntos ya que si no la MAC no entra en una línea
   lcd.print("MAC:" + deviceId);
   Serial.println("MAC: " + deviceId);
-
   
   delay(3000);
 }
@@ -100,46 +85,79 @@ void setup() {
 void loop() {
   checkConfigPin(); // Comprobar si se ha conectado el D6 para cambiar de local a https
 
-  float temperature_data = dht.readTemperature();
-  float humidity_data = dht.readHumidity();
-
-  // Salida a consola del IDE
-  Serial.print("Temperature: ");
-  Serial.println(temperature_data);
-  Serial.print("Humidity: ");
-  Serial.println(humidity_data);
-  //   delay(500); EVITAR ESTE DELAY YA QUE PUEDE CAUSAR LECTURAS INESTABLES, IMPORTANTE!!
-
-  // Salida a LCD
-  lcd.clear();
-  lcd.setCursor(0, 0);  // Columna 0, línea 0
-  lcd.print("Temp: ");
-  lcd.print(temperature_data);
-  lcd.print(" C");
-  lcd.setCursor(0, 1);  // Columna 0. Línea 1
-  lcd.print("Hum:  ");
-  lcd.print(humidity_data);
-  lcd.print(" %");
-  
-  if (isnan(temperature_data) || isnan(humidity_data)) {
-    // Serial.println("Error al leer el sensor DHT11");
-    Serial.println("Error al leer el sensor DHT22");
-    // Salida a LCD
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Error sensor :_(");
-  
-    delay(2000);
-    return;
+  // -------- PROMEDIO EN LAS LECTURAS ----------
+  int analogValue = 0;
+  for (int i = 0; i < 10; i++) {
+    analogValue += analogRead(WIND_SENSOR_PIN);
+    delay(2);
   }
+  analogValue /= 10;
+
+  // -------- VOLTAJE ----------
+  float voltage = analogValue * 3.3 / 1023.0;
+  voltage = voltage / DIVIDER_FACTOR;
+
+  // -------- RESTAR OFFSET ----------
+  voltage -= OFFSET_VOLTAGE;
+  if (voltage < 0.0) voltage = 0.0;
+
+  // -------- VELOCIDAD ----------
+  float windSpeedMS = voltage * 14.0;
+  float windSpeedKMH = voltage * 50.0;
+
+  // -------- ELIMINAR VELOCIDAD RESIDUAL (A VECES MUESTRA 0.01KM/H) POR ----------
+  //      redondeos internos del float
+  //      multiplicación por 50.0
+  //      ruido mínimo de ±1 en la lectura ADC
+  if (windSpeedMS < 0.02) windSpeedMS = 0.0;
+  if (windSpeedKMH < 0.05) windSpeedKMH = 0.0;
+
+  // -------- SALIDA ----------
+  Serial.print("Voltaje ajustado: ");
+  Serial.print(voltage, 3);
+  Serial.print(" V | Velocidad viento: ");
+  Serial.print(windSpeedMS, 2);
+  Serial.print(" m/s | ");
+  Serial.print(windSpeedKMH, 2);
+  Serial.println(" km/h");
+
+    if (contadorAPI >= 5000) { // SI HAN PASADO 5 SEGUNDOS
+        // Salida a consola del IDE
+        Serial.print("m/s: ");
+        Serial.println(windSpeedMS);
+        Serial.print("Km/h: ");
+        Serial.println(windSpeedKMH);
+
+        // Salida a LCD
+        lcd.clear();
+        lcd.setCursor(0, 0);  // Columna 0, línea 0
+        lcd.print("M/s: ");
+        lcd.print(windSpeedMS);
+        lcd.setCursor(0, 1);  // Columna 0. Línea 1
+        lcd.print("Km/h:  ");
+        lcd.print(windSpeedKMH);
+        
+        if (isnan(windSpeedMS) || isnan(windSpeedKMH)) {
+            Serial.println("Error sensor Anemómetro");
+            // Salida a LCD
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Error :_(");
+            
+            delay(2000);
+            return;
+        }
+            
+        sendDataToApi(windSpeedMS, windSpeedKMH);
+        contadorAPI = 0;
+    } else {
+        contadorAPI += 500;
+    }
   
-  sendDataToApi(temperature_data, humidity_data);
-  
-  delay(5000);
+  delay(500);
 }
 
-void sendDataToApi(float temperature_data, float humidity_data) {
-// WiFiClient client;
+void sendDataToApi(float windSpeedMS, float windSpeedKMH) {
   WiFiClientSecure client;
   //   Versión que permite usar https, pero tenemos que conseguir el fingerprint de render.com (donde está alojado el
   //   backend). Para ello lo conseguimos desde el Bash de Git en VSC poniendo:
@@ -155,12 +173,9 @@ void sendDataToApi(float temperature_data, float humidity_data) {
   
   bool isHttps = url.startsWith("https");
 
-//   http.begin(client, url);
-
   if (isHttps) {
       Serial.println("🔒 Modo HTTPS");
 
-    //   WiFiClientSecure client;
       if (!http.begin(client, url)) {
         Serial.println("❌ Error iniciando conexión HTTPS");
         return;
@@ -184,16 +199,15 @@ void sendDataToApi(float temperature_data, float humidity_data) {
   String jsonData = 
     "{\"device_id\": \"" + String(deviceId) + "\"," +
     "\"type\": \"devices\","+
-    "\"description\": \"Weather sensor\","+
+    "\"description\": \"Anemomether\","+
     "\"data\": {"+
-        "\"temperature\": " + String(temperature_data) + ","+
-        "\"humidity\": " + String(humidity_data) + "}" +
+        "\"m/s\": " + String(windSpeedMS) + ","+
+        "\"km/h\": " + String(windSpeedKMH) + "}" +
     "}";
 
   int httpCode = http.POST(jsonData);
 
   if (httpCode > 0) {
-    // if (httpCode == HTTP_CODE_OK) {
     if (httpCode >= 200 && httpCode < 300) {
       String payload = http.getString();
       Serial.println("Respuesta recibida: " + payload);

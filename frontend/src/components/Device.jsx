@@ -56,7 +56,7 @@ function Device() {
 
         <Box component="div" sx={{display: "flex", flexDirection: "column", alignItems: "center"}}
         >
-            <Typography variant="h1" sx={{ backgroundColor: "#2137ffff", color: "white", padding: "20px", 
+            <Typography variant="h3" sx={{ backgroundColor: "#2137ffff", color: "white", padding: "20px", 
                 border: "3px solid", borderRadius: "10px", marginY: "10px"
             }}>
                 Devices station
@@ -67,7 +67,7 @@ function Device() {
                             borderRadius: "10px", backgroundColor: "black", padding: "10px"}}>
                         <Box component="div"
                             sx={{display: "flex", width: "100%", flexDirection: "column", border: "1px solid",
-                                backgroundColor: "blue", color: "white", padding: "20px",
+                                backgroundColor: "blue", color: "white", padding: "10px",
                             }}>
                             {Object.entries(device).map((dev, index) => {
                                 const notNeededFields = ['_id', '_rev', 'type']
@@ -76,7 +76,7 @@ function Device() {
                                     if (typeof(dev[1]) === 'object') {
                                         resultTypo = Object.entries(dev[1]).map((value, index) => {
                                             return (
-                                                <Typography key={index} sx={{fontFamily: 'LcdDot', fontSize: "10px", lineHeight: "30px"}}>
+                                                <Typography key={index} sx={{fontFamily: 'LcdDot', fontSize: "8px", lineHeight: "30px"}}>
                                                     {value[0]}: {value[1]}
                                                 </Typography>
                                             )
@@ -88,7 +88,7 @@ function Device() {
                                         return resultTypo
                                     }
                                         return (
-                                            <Typography key={index} sx={{fontFamily: 'LcdDot', fontSize: "10px", lineHeight: "30px"}}>
+                                            <Typography key={index} sx={{fontFamily: 'LcdDot', fontSize: "8px", lineHeight: "30px"}}>
                                                 {neededField()} 
                                             </Typography>
                                         )
