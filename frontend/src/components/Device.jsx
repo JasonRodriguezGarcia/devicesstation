@@ -59,7 +59,7 @@ function Device() {
             <Typography variant="h3" sx={{ backgroundColor: "#2137ffff", color: "white", padding: "20px", 
                 border: "3px solid", borderRadius: "10px", marginY: "10px"
             }}>
-                Devices station
+                Devices station2
             </Typography>
             {devices.length > 0 ?
                 devices.map((device, index) => (
